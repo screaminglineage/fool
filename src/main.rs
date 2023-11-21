@@ -1,18 +1,20 @@
 #[derive(Debug, Clone, PartialEq)]
-enum Symbol {
+enum Expression {
     Variable(char),
     Complement(char),
     Boolean(Boolean),
     Operation(Box<Operation>),
 }
 
-impl Symbol {
-    fn evaluate(self) -> Symbol {
+use Expression::*;
+
+impl Expression {
+    fn evaluate(self) -> Expression {
         match self {
-            Symbol::Variable(_) => self,
-            Symbol::Complement(_) => self,
-            Symbol::Boolean(_) => self,
-            Symbol::Operation(op) => op.evaluate(),
+            Variable(_) => self,
+            Complement(_) => self,
+            Boolean(_) => self,
+            Operation(op) => op.evaluate(),
         }
     }
 }
@@ -25,13 +27,13 @@ enum Boolean {
 
 #[derive(Debug, Clone, PartialEq)]
 enum Operation {
-    And(Symbol, Symbol),
-    Or(Symbol, Symbol),
-    Not(Symbol),
+    And(Expression, Expression),
+    Or(Expression, Expression),
+    Not(Expression),
 }
 
 impl Operation {
-    fn evaluate(self) -> Symbol {
+    fn evaluate(self) -> Expression {
         match self {
             Operation::And(a, b) => logical_and(a.evaluate(), b.evaluate()),
             Operation::Or(a, b) => logical_or(a.evaluate(), b.evaluate()),
@@ -40,95 +42,72 @@ impl Operation {
     }
 }
 
-fn logical_or(op_a: Symbol, op_b: Symbol) -> Symbol {
+fn logical_or(op_a: Expression, op_b: Expression) -> Expression {
     match (op_a, op_b) {
         // logical or operations
-        (Symbol::Boolean(Boolean::Zero), a) | (a, Symbol::Boolean(Boolean::Zero)) => a,
-        (Symbol::Boolean(Boolean::One), _) | (_, Symbol::Boolean(Boolean::One)) => {
-            Symbol::Boolean(Boolean::One)
-        }
+        (Boolean(Boolean::Zero), a) | (a, Boolean(Boolean::Zero)) => a,
+        (Boolean(Boolean::One), _) | (_, Boolean(Boolean::One)) => Boolean(Boolean::One),
 
         // simplify if both variables are the same
-        (Symbol::Variable(a), Symbol::Variable(b)) if a == b => Symbol::Variable(a),
-        (Symbol::Complement(a), Symbol::Complement(b)) if a == b => Symbol::Complement(a),
+        (Variable(a), Variable(b)) if a == b => Variable(a),
+        (Complement(a), Complement(b)) if a == b => Complement(a),
 
         // keep the previous structure if the variables are
         // different as no simplification can be done
-        (Symbol::Variable(a), Symbol::Variable(b))
-        | (Symbol::Complement(a), Symbol::Complement(b))
-            if a != b =>
-        {
-            Symbol::Operation(Box::new(Operation::Or(
-                Symbol::Variable(a),
-                Symbol::Variable(b),
-            )))
+        (Variable(a), Variable(b)) | (Complement(a), Complement(b)) if a != b => {
+            Operation(Box::new(Operation::Or(Variable(a), Variable(b))))
         }
 
         // A + !A = 1
-        (Symbol::Variable(a), Symbol::Complement(b))
-        | (Symbol::Complement(b), Symbol::Variable(a))
-            if a == b =>
-        {
-            Symbol::Boolean(Boolean::One)
+        (Variable(a), Complement(b)) | (Complement(b), Variable(a)) if a == b => {
+            Boolean(Boolean::One)
         }
 
         // recursively evaluate the operations
-        (Symbol::Operation(a), Symbol::Operation(b)) => logical_or(a.evaluate(), b.evaluate()),
-        (Symbol::Operation(op), a) | (a, Symbol::Operation(op)) => logical_or(op.evaluate(), a),
+        (Operation(a), Operation(b)) => logical_or(a.evaluate(), b.evaluate()),
+        (Operation(op), a) | (a, Operation(op)) => logical_or(op.evaluate(), a),
         _ => unreachable!(),
     }
 }
 
-fn logical_and(op_a: Symbol, op_b: Symbol) -> Symbol {
+fn logical_and(op_a: Expression, op_b: Expression) -> Expression {
     match (op_a, op_b) {
         // logical and operations
-        (Symbol::Boolean(Boolean::Zero), _) | (_, Symbol::Boolean(Boolean::Zero)) => {
-            Symbol::Boolean(Boolean::Zero)
-        }
-        (Symbol::Boolean(Boolean::One), a) | (a, Symbol::Boolean(Boolean::One)) => a,
+        (Boolean(Boolean::Zero), _) | (_, Boolean(Boolean::Zero)) => Boolean(Boolean::Zero),
+        (Boolean(Boolean::One), a) | (a, Boolean(Boolean::One)) => a,
 
         // simplify if both variables are the same
-        (Symbol::Variable(a), Symbol::Variable(b)) if a == b => Symbol::Variable(a),
-        (Symbol::Complement(a), Symbol::Complement(b)) if a == b => Symbol::Complement(a),
+        (Variable(a), Variable(b)) if a == b => Variable(a),
+        (Complement(a), Complement(b)) if a == b => Complement(a),
 
         // keep the previous structure if the variables are
         // different as no simplification can be done
-        (Symbol::Variable(a), Symbol::Variable(b))
-        | (Symbol::Complement(a), Symbol::Complement(b))
-            if a != b =>
-        {
-            Symbol::Operation(Box::new(Operation::And(
-                Symbol::Variable(a),
-                Symbol::Variable(b),
-            )))
+        (Variable(a), Variable(b)) | (Complement(a), Complement(b)) if a != b => {
+            Operation(Box::new(Operation::And(Variable(a), Variable(b))))
         }
 
         // A . !A = 0
-        (Symbol::Variable(a), Symbol::Complement(b))
-        | (Symbol::Complement(b), Symbol::Variable(a))
-            if a == b =>
-        {
-            Symbol::Boolean(Boolean::Zero)
+        (Variable(a), Complement(b)) | (Complement(b), Variable(a)) if a == b => {
+            Boolean(Boolean::Zero)
         }
 
         // recursively evaluate the operations
-        (Symbol::Operation(a), Symbol::Operation(b)) => logical_and(a.evaluate(), b.evaluate()),
-        (Symbol::Operation(op), a) | (a, Symbol::Operation(op)) => logical_and(op.evaluate(), a),
+        (Operation(a), Operation(b)) => logical_and(a.evaluate(), b.evaluate()),
+        (Operation(op), a) | (a, Operation(op)) => logical_and(op.evaluate(), a),
         _ => unreachable!(),
     }
 }
 
-fn logical_not(op_a: Symbol) -> Symbol {
+fn logical_not(op_a: Expression) -> Expression {
     match op_a {
-        Symbol::Boolean(Boolean::Zero) => Symbol::Boolean(Boolean::One),
-        Symbol::Boolean(Boolean::One) => Symbol::Boolean(Boolean::Zero),
-        Symbol::Variable(a) => Symbol::Complement(a),
-        Symbol::Operation(_) => Symbol::Operation(Box::new(Operation::Not(op_a))),
+        Boolean(Boolean::Zero) => Boolean(Boolean::One),
+        Boolean(Boolean::One) => Boolean(Boolean::Zero),
+        Variable(a) => Complement(a),
+        Operation(_) => Operation(Box::new(Operation::Not(op_a))),
         _ => unreachable!(),
     }
 }
 
-use Symbol::*;
 fn main() {
     let expr = Operation(Box::new(Operation::Or(
         Operation(Box::new(Operation::And(
