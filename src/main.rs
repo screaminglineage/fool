@@ -42,16 +42,18 @@ impl Operation {
 
 fn logical_or(op_a: Symbol, op_b: Symbol) -> Symbol {
     match (op_a, op_b) {
+        // logical or operations
         (Symbol::Boolean(Boolean::Zero), a) | (a, Symbol::Boolean(Boolean::Zero)) => a,
         (Symbol::Boolean(Boolean::One), _) | (_, Symbol::Boolean(Boolean::One)) => {
             Symbol::Boolean(Boolean::One)
         }
 
-        // simplify same variables
+        // simplify if both variables are the same
         (Symbol::Variable(a), Symbol::Variable(b)) if a == b => Symbol::Variable(a),
         (Symbol::Complement(a), Symbol::Complement(b)) if a == b => Symbol::Complement(a),
 
-        // revert back to tree structure for different variables
+        // keep the previous structure if the variables are
+        // different as no simplification can be done
         (Symbol::Variable(a), Symbol::Variable(b))
         | (Symbol::Complement(a), Symbol::Complement(b))
             if a != b =>
@@ -70,6 +72,7 @@ fn logical_or(op_a: Symbol, op_b: Symbol) -> Symbol {
             Symbol::Boolean(Boolean::One)
         }
 
+        // recursively evaluate the operations
         (Symbol::Operation(a), Symbol::Operation(b)) => logical_or(a.evaluate(), b.evaluate()),
         (Symbol::Operation(op), a) | (a, Symbol::Operation(op)) => logical_or(op.evaluate(), a),
         _ => unreachable!(),
@@ -78,16 +81,18 @@ fn logical_or(op_a: Symbol, op_b: Symbol) -> Symbol {
 
 fn logical_and(op_a: Symbol, op_b: Symbol) -> Symbol {
     match (op_a, op_b) {
+        // logical and operations
         (Symbol::Boolean(Boolean::Zero), _) | (_, Symbol::Boolean(Boolean::Zero)) => {
             Symbol::Boolean(Boolean::Zero)
         }
         (Symbol::Boolean(Boolean::One), a) | (a, Symbol::Boolean(Boolean::One)) => a,
 
-        // simplify same variables
+        // simplify if both variables are the same
         (Symbol::Variable(a), Symbol::Variable(b)) if a == b => Symbol::Variable(a),
         (Symbol::Complement(a), Symbol::Complement(b)) if a == b => Symbol::Complement(a),
 
-        // revert back to tree structure for different variables
+        // keep the previous structure if the variables are
+        // different as no simplification can be done
         (Symbol::Variable(a), Symbol::Variable(b))
         | (Symbol::Complement(a), Symbol::Complement(b))
             if a != b =>
@@ -106,6 +111,7 @@ fn logical_and(op_a: Symbol, op_b: Symbol) -> Symbol {
             Symbol::Boolean(Boolean::Zero)
         }
 
+        // recursively evaluate the operations
         (Symbol::Operation(a), Symbol::Operation(b)) => logical_and(a.evaluate(), b.evaluate()),
         (Symbol::Operation(op), a) | (a, Symbol::Operation(op)) => logical_and(op.evaluate(), a),
         _ => unreachable!(),
