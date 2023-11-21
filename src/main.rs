@@ -9,9 +9,9 @@ enum Symbol {
 impl Symbol {
     fn evaluate(self) -> Symbol {
         match self {
-            Symbol::Variable(a) => self,
-            Symbol::Complement(a) => self,
-            Symbol::Boolean(a) => self,
+            Symbol::Variable(_) => self,
+            Symbol::Complement(_) => self,
+            Symbol::Boolean(_) => self,
             Symbol::Operation(op) => op.evaluate(),
         }
     }
@@ -54,9 +54,13 @@ fn logical_or(op_a: Symbol, op_b: Symbol) -> Symbol {
         // revert back to tree structure for different variables
         (Symbol::Variable(a), Symbol::Variable(b))
         | (Symbol::Complement(a), Symbol::Complement(b))
-            if a != b => {
-                Symbol::Operation(Box::new(Operation::Or(Symbol::Variable(a), Symbol::Variable(b))))
-            }
+            if a != b =>
+        {
+            Symbol::Operation(Box::new(Operation::Or(
+                Symbol::Variable(a),
+                Symbol::Variable(b),
+            )))
+        }
 
         // A + !A = 1
         (Symbol::Variable(a), Symbol::Complement(b))
@@ -66,8 +70,8 @@ fn logical_or(op_a: Symbol, op_b: Symbol) -> Symbol {
             Symbol::Boolean(Boolean::One)
         }
 
-        (Symbol::Operation(op), a) | (a, Symbol::Operation(op)) => logical_or(op.evaluate(), a),
         (Symbol::Operation(a), Symbol::Operation(b)) => logical_or(a.evaluate(), b.evaluate()),
+        (Symbol::Operation(op), a) | (a, Symbol::Operation(op)) => logical_or(op.evaluate(), a),
         _ => unreachable!(),
     }
 }
@@ -86,9 +90,13 @@ fn logical_and(op_a: Symbol, op_b: Symbol) -> Symbol {
         // revert back to tree structure for different variables
         (Symbol::Variable(a), Symbol::Variable(b))
         | (Symbol::Complement(a), Symbol::Complement(b))
-            if a != b => {
-                Symbol::Operation(Box::new(Operation::And(Symbol::Variable(a), Symbol::Variable(b))))
-            }
+            if a != b =>
+        {
+            Symbol::Operation(Box::new(Operation::And(
+                Symbol::Variable(a),
+                Symbol::Variable(b),
+            )))
+        }
 
         // A . !A = 0
         (Symbol::Variable(a), Symbol::Complement(b))
@@ -98,8 +106,8 @@ fn logical_and(op_a: Symbol, op_b: Symbol) -> Symbol {
             Symbol::Boolean(Boolean::Zero)
         }
 
-        (Symbol::Operation(op), a) | (a, Symbol::Operation(op)) => logical_and(op.evaluate(), a),
         (Symbol::Operation(a), Symbol::Operation(b)) => logical_and(a.evaluate(), b.evaluate()),
+        (Symbol::Operation(op), a) | (a, Symbol::Operation(op)) => logical_and(op.evaluate(), a),
         _ => unreachable!(),
     }
 }
