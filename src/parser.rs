@@ -10,17 +10,6 @@ pub enum Token {
     WhiteSpace,
 }
 
-// impl Token {
-//     fn is_operator(&self) -> bool {
-//         match self {
-//             Self::Variable(_) => false,
-//             Self::Bool(_) => false,
-//             Self::WhiteSpace => false,
-//             _ => true,
-//         }
-//     }
-// }
-
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Operator {
     Not,
@@ -102,7 +91,8 @@ fn valid_syntax(tokens: &[Token]) -> bool {
     true
 }
 
-fn precedence(token: &Operator) -> u8 {
+// Used to calculate operator precedence
+const fn precedence(token: &Operator) -> u8 {
     match token {
         Operator::Not => 3,
         Operator::Binary(BinaryOps::And) => 2,
@@ -131,6 +121,8 @@ fn create_expr_from_operator(op: Operator, var_stack: &mut Vec<Expression>) {
     }
 }
 
+// Parsing the Tokens into an Expression
+// which can be evaluated
 fn create_expr(tokens: Vec<Token>) -> Expression {
     let mut var_stack: Vec<Expression> = Vec::new();
     let mut op_stack: Vec<Operator> = Vec::new();
