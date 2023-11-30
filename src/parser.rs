@@ -1,4 +1,8 @@
-#[derive(Debug, PartialEq)]
+use fool::Boolean;
+use fool::Expression;
+use fool::Operation;
+
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Token {
     Variable(char),
     Bool(Boolean),
@@ -7,26 +11,32 @@ pub enum Token {
     WhiteSpace,
 }
 
-#[derive(Debug, PartialEq)]
-pub enum Boolean {
-    Zero,
-    One,
+impl Token {
+    fn is_operator(&self) -> bool {
+        match self {
+            Self::Variable(_) => false,
+            Self::Bool(_) => false,
+            Self::WhiteSpace => false,
+            _ => true,
+        }
+    }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Operator {
     And,
     Or,
     // Xor
 }
 
-pub fn parse(expr: &str) -> Vec<Token> {
+pub fn parse(expr: &str) -> Expression {
     let tokens = remove_whitespace(create_tokens(expr));
     if tokens.is_empty() {
         panic!("Error: Empty Expression")
     }
     if valid_syntax(&tokens) {
-        return tokens;
+        println!("{tokens:?}");
+        return create_expr(tokens);
     } else {
         panic!("Error: Malformed Expression")
     }
@@ -81,4 +91,69 @@ fn valid_syntax(tokens: &[Token]) -> bool {
         }
     }
     true
+}
+
+fn precedence(token: &Token) -> u8 {
+    match token {
+        Token::Not => 3,
+        Token::Op(Operator::And) => 2,
+        Token::Op(Operator::Or) => 1,
+        _ => panic!("invalid operation"),
+    }
+}
+
+fn create_expr_from_operator(op: Token, var_stack: &mut Vec<Expression>) {
+    use Expression as e;
+    use Token as t;
+    match op {
+        t::Not => {
+            let expr = var_stack.pop().expect("var_stack has atleast 1 element");
+            let new_expr = e::Operation(Box::new(Operation::Not(expr)));
+            var_stack.push(new_expr);
+        }
+        t::Op(op) => {
+            let expr_1 = var_stack.pop().expect("var_stack has atleast 2 elements");
+            let expr_2 = var_stack.pop().expect("var_stack has atleast 2 elements");
+            let new_expr = match op {
+                Operator::And => Operation::And(expr_1, expr_2),
+                Operator::Or => Operation::Or(expr_1, expr_2),
+            };
+            let new_expr = e::Operation(Box::new(new_expr));
+            var_stack.push(new_expr);
+        }
+        _ => unreachable!("only operators are handled"),
+    }
+}
+
+fn create_expr(tokens: Vec<Token>) -> Expression {
+    let mut var_stack: Vec<Expression> = Vec::new();
+    let mut op_stack: Vec<Token> = Vec::new();
+
+    use Expression as e;
+    use Token as t;
+    for token in tokens {
+        if token.is_operator() {
+            while !op_stack.is_empty()
+                && precedence(&token) < precedence(op_stack.last().expect("op_stack is non-empty"))
+            {
+                let op = op_stack.pop().expect("op_stack is non-empty");
+                create_expr_from_operator(op, &mut var_stack);
+            }
+            op_stack.push(token);
+        } else {
+            match token {
+                t::Variable(a) => var_stack.push(e::Variable(a)),
+                t::Bool(a) => var_stack.push(e::Boolean(a)),
+                _ => (),
+            }
+        }
+    }
+
+    while !op_stack.is_empty() {
+        let op = op_stack.pop().expect("op_stack is non-empty");
+        create_expr_from_operator(op, &mut var_stack);
+    }
+    var_stack
+        .pop()
+        .expect("only 1 element left in variable stack")
 }
