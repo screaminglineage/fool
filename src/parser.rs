@@ -92,7 +92,7 @@ fn valid_syntax(tokens: &[Token]) -> bool {
 }
 
 // Used to calculate operator precedence
-const fn precedence(token: &Operator) -> u8 {
+fn precedence(token: &Operator) -> u8 {
     match token {
         Operator::Not => 3,
         Operator::Binary(BinaryOps::And) => 2,
