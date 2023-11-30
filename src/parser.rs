@@ -6,24 +6,29 @@ use fool::Operation;
 pub enum Token {
     Variable(char),
     Bool(Boolean),
-    Not,
     Op(Operator),
     WhiteSpace,
 }
 
-impl Token {
-    fn is_operator(&self) -> bool {
-        match self {
-            Self::Variable(_) => false,
-            Self::Bool(_) => false,
-            Self::WhiteSpace => false,
-            _ => true,
-        }
-    }
-}
+// impl Token {
+//     fn is_operator(&self) -> bool {
+//         match self {
+//             Self::Variable(_) => false,
+//             Self::Bool(_) => false,
+//             Self::WhiteSpace => false,
+//             _ => true,
+//         }
+//     }
+// }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Operator {
+    Not,
+    Binary(BinaryOps),
+}
+
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum BinaryOps {
     And,
     Or,
     // Xor
@@ -47,9 +52,9 @@ fn create_tokens(expr: &str) -> Vec<Token> {
         .map(|c| match c {
             '0' => Token::Bool(Boolean::Zero),
             '1' => Token::Bool(Boolean::One),
-            '!' => Token::Not,
-            '.' => Token::Op(Operator::And),
-            '+' => Token::Op(Operator::Or),
+            '!' => Token::Op(Operator::Not),
+            '.' => Token::Op(Operator::Binary(BinaryOps::And)),
+            '+' => Token::Op(Operator::Binary(BinaryOps::Or)),
             // '^' => Token::Op(Operation::Xor),
             a if a.is_alphabetic() => Token::Variable(a),
             a if a.is_whitespace() => Token::WhiteSpace,
@@ -67,17 +72,15 @@ fn remove_whitespace(tokens: Vec<Token>) -> Vec<Token> {
 
 fn valid_syntax(tokens: &[Token]) -> bool {
     use Token as t;
-    // first token cannot be an operator
-    if let t::Op(_) = tokens[0] {
+    // first token cannot be a binary operator
+    if let t::Op(Operator::Binary(_)) = tokens[0] {
         return false;
     }
 
     // tokens is not empty so it's safe to unwrap
-    // last token cannot be an operator or `NOT`
-    match tokens.last().unwrap() {
-        t::Not => return false,
-        t::Op(_) => return false,
-        _ => (),
+    // last token cannot be an operator
+    if let t::Op(_) = tokens.last().unwrap() {
+        return false;
     }
 
     // two variables or booleans cannot be placed consecutively
@@ -85,61 +88,64 @@ fn valid_syntax(tokens: &[Token]) -> bool {
     // placed consecutively
     for slice in tokens.windows(2) {
         match slice[0] {
-            t::Variable(_) | t::Bool(_) if !matches!(slice[1], t::Op(_)) => return false,
-            t::Not | t::Op(_) if matches!(slice[1], t::Op(_)) => return false,
+            t::Variable(_) | t::Bool(_) if !matches!(slice[1], t::Op(Operator::Binary(_))) => {
+                return false
+            }
+            t::Op(Operator::Not) | t::Op(Operator::Binary(_))
+                if matches!(slice[1], t::Op(Operator::Binary(_))) =>
+            {
+                return false
+            }
             _ => (),
         }
     }
     true
 }
 
-fn precedence(token: &Token) -> u8 {
+fn precedence(token: &Operator) -> u8 {
     match token {
-        Token::Not => 3,
-        Token::Op(Operator::And) => 2,
-        Token::Op(Operator::Or) => 1,
-        _ => panic!("invalid operation"),
+        Operator::Not => 3,
+        Operator::Binary(BinaryOps::And) => 2,
+        Operator::Binary(BinaryOps::Or) => 1,
     }
 }
 
-fn create_expr_from_operator(op: Token, var_stack: &mut Vec<Expression>) {
+fn create_expr_from_operator(op: Operator, var_stack: &mut Vec<Expression>) {
     use Expression as e;
-    use Token as t;
     match op {
-        t::Not => {
+        Operator::Not => {
             let expr = var_stack.pop().expect("var_stack has atleast 1 element");
             let new_expr = e::Operation(Box::new(Operation::Not(expr)));
             var_stack.push(new_expr);
         }
-        t::Op(op) => {
+        Operator::Binary(op) => {
             let expr_1 = var_stack.pop().expect("var_stack has atleast 2 elements");
             let expr_2 = var_stack.pop().expect("var_stack has atleast 2 elements");
             let new_expr = match op {
-                Operator::And => Operation::And(expr_1, expr_2),
-                Operator::Or => Operation::Or(expr_1, expr_2),
+                BinaryOps::And => Operation::And(expr_1, expr_2),
+                BinaryOps::Or => Operation::Or(expr_1, expr_2),
             };
             let new_expr = e::Operation(Box::new(new_expr));
             var_stack.push(new_expr);
         }
-        _ => unreachable!("only operators are handled"),
     }
 }
 
 fn create_expr(tokens: Vec<Token>) -> Expression {
     let mut var_stack: Vec<Expression> = Vec::new();
-    let mut op_stack: Vec<Token> = Vec::new();
+    let mut op_stack: Vec<Operator> = Vec::new();
 
     use Expression as e;
     use Token as t;
     for token in tokens {
-        if token.is_operator() {
+        if let t::Op(op) = token {
             while !op_stack.is_empty()
-                && precedence(&token) < precedence(op_stack.last().expect("op_stack is non-empty"))
+                && precedence(&op) < precedence(op_stack.last().expect("op_stack is non-empty"))
             {
                 let op = op_stack.pop().expect("op_stack is non-empty");
                 create_expr_from_operator(op, &mut var_stack);
             }
-            op_stack.push(token);
+            op_stack.push(op);
         } else {
             match token {
                 t::Variable(a) => var_stack.push(e::Variable(a)),
