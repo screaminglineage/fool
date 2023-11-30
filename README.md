@@ -5,5 +5,5 @@ Only has the most basic operations (AND, NOT, OR) so far.
 
 TODO
 - [ ] XOR logic
-- [ ] parsing user input
+- [x] parsing user input
 - [ ] CLI Interface
