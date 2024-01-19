@@ -73,8 +73,8 @@ fn valid_syntax(tokens: &[Token]) -> bool {
     }
 
     // two variables or booleans cannot be placed consecutively
-    // similarly two operators or `NOT` and an operator cannot be
-    // placed consecutively
+    // similarly two operators or `NOT` and another operator cannot be
+    // placed next to each other
     for slice in tokens.windows(2) {
         match slice[0] {
             t::Variable(_) | t::Bool(_) if !matches!(slice[1], t::Op(Operator::Binary(_))) => {
