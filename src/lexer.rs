@@ -10,7 +10,7 @@ pub enum TokenKind {
     DoubleArrow,
     True,
     False,
-    // TODO: Store the string as a separate, 'value', field in Token struct
+    // TODO: Store the identifier name string as a separate, 'value', field in Token struct
     Identifier(String),
     EOF,
 }

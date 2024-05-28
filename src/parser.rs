@@ -6,6 +6,7 @@ pub enum Expr {
     Op(Box<Op>),
     Value(BooleanValue),
     Identifier(String),
+    Group(Box<Expr>),
 }
 
 #[derive(Debug)]
@@ -32,11 +33,6 @@ pub enum BooleanValue {
 pub struct Parser {
     tokens: Vec<Token>,
     current: usize,
-}
-
-struct ParseError {
-    msg: String,
-    location: usize,
 }
 
 impl Parser {
@@ -136,8 +132,27 @@ impl Parser {
             Some(Token { kind: tk::True, .. }) => Some(Expr::Value(BooleanValue::True)),
             Some(Token { kind: tk::False, .. }) => Some(Expr::Value(BooleanValue::False)),
             Some(Token {kind: tk::Identifier(val), .. }) => Some(Expr::Identifier(val.to_owned())),
+
+            Some(Token { kind: tk::OpenParen, .. }) => {
+                // self.advance();
+                let inner = self.conditional()?;
+                if self.check(&tk::CloseParen) {
+                    return Some(Expr::Group(Box::new(inner)));
+                } else {
+                    eprintln!(
+                        "Expected ')' after {:?}, found: {:?}", 
+                        self.previous().map(|tok| tok.kind.clone()), 
+                        self.peek().map(|tok| tok.kind.clone())
+                    );
+                    return None;
+                }
+            }
             _ => {
-                eprintln!("Expected true, false or identifier at index: {}", self.current + 1);
+                eprintln!(
+                    "Expected true, false or identifier after {:?}, found: '{:?}'", 
+                    self.previous().map(|tok| tok.kind.clone()), 
+                    self.peek().map(|tok| tok.kind.clone())
+                );
                 return None;
             }
         }
