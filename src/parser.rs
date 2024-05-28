@@ -5,7 +5,7 @@ use TokenKind as tk;
 pub enum Expr {
     Op(Box<Op>),
     Value(BooleanValue),
-    Identifier(String),
+    Variable(String),
     Group(Box<Expr>),
 }
 
@@ -131,11 +131,12 @@ impl Parser {
         match self.advance() {
             Some(Token { kind: tk::True, .. }) => Some(Expr::Value(BooleanValue::True)),
             Some(Token { kind: tk::False, .. }) => Some(Expr::Value(BooleanValue::False)),
-            Some(Token {kind: tk::Identifier(val), .. }) => Some(Expr::Identifier(val.to_owned())),
+            Some(Token {kind: tk::Identifier(val), .. }) => Some(Expr::Variable(val.to_owned())),
 
             Some(Token { kind: tk::OpenParen, .. }) => {
                 let inner = self.conditional()?;
                 if self.check(&tk::CloseParen) {
+                    self.advance();
                     return Some(Expr::Group(Box::new(inner)));
                 } else {
                     eprintln!(
