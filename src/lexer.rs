@@ -10,7 +10,9 @@ pub enum TokenKind {
     DoubleArrow,
     True,
     False,
+    // TODO: Store the string as a separate, 'value', field in Token struct
     Identifier(String),
+    EOF,
 }
 
 #[derive(Debug, Clone)]
@@ -27,36 +29,36 @@ impl Token {
 
 pub struct Lexer {
     source: Vec<char>,
-    index: usize,
+    current: usize,
 }
 
 impl Lexer {
     pub fn new(source: &str) -> Self {
         Self {
             source: source.chars().collect(),
-            index: 0,
+            current: 0,
         }
     }
 
     fn next<'a>(&'a mut self) -> Option<&'a char> {
-        let next = self.source.get(self.index);
-        self.index += 1;
+        let next = self.source.get(self.current);
+        self.current += 1;
         return next;
     }
 
     fn peek<'a>(&'a self) -> Option<&'a char> {
-        return self.source.get(self.index);
+        return self.source.get(self.current);
     }
 
     fn peek_next<'a>(&'a self) -> Option<&'a char> {
-        if self.index >= self.source.len() - 1 {
+        if self.current >= self.source.len() - 1 {
             return None;
         }
-        return self.source.get(self.index + 1);
+        return self.source.get(self.current + 1);
     }
 
     fn identifier(&mut self, tokens: &mut Vec<Token>) -> Option<()> {
-        let start_index = self.index;
+        let start_index = self.current;
         let Some(first) = self.next() else {
             return None;
         };
@@ -64,7 +66,7 @@ impl Lexer {
         if !(first.is_alphabetic() || *first == '_') {
             eprintln!(
                 "Expected alphabetic character or '_' at the beginning of identifier at index: {}",
-                self.index - 1
+                self.current - 1
             );
             return None;
         }
@@ -75,7 +77,7 @@ impl Lexer {
             self.next();
         }
 
-        let string: String = self.source[start_index..self.index].iter().collect();
+        let string: String = self.source[start_index..self.current].iter().collect();
 
         // check for keywords
         let token = match string.as_str() {
@@ -92,19 +94,19 @@ impl Lexer {
         while let Some(ch) = self.peek() {
             use TokenKind::*;
             match ch {
-                '(' => tokens.push(Token::new(OpenParen, self.index)),
-                ')' => tokens.push(Token::new(CloseParen, self.index)),
-                '!' => tokens.push(Token::new(Bang, self.index)),
-                '+' => tokens.push(Token::new(Plus, self.index)),
-                '*' => tokens.push(Token::new(Star, self.index)),
-                '^' => tokens.push(Token::new(Caret, self.index)),
+                '(' => tokens.push(Token::new(OpenParen, self.current)),
+                ')' => tokens.push(Token::new(CloseParen, self.current)),
+                '!' => tokens.push(Token::new(Bang, self.current)),
+                '+' => tokens.push(Token::new(Plus, self.current)),
+                '*' => tokens.push(Token::new(Star, self.current)),
+                '^' => tokens.push(Token::new(Caret, self.current)),
                 // parse '->'
                 '-' => {
                     if let Some('>') = self.peek_next() {
                         self.next();
-                        tokens.push(Token::new(Arrow, self.index));
+                        tokens.push(Token::new(Arrow, self.current));
                     } else {
-                        eprintln!("Expected '>' after '-' token at index: {}", self.index);
+                        eprintln!("Expected '>' after '-' token at index: {}", self.current);
                         return None;
                     }
                 }
@@ -114,13 +116,13 @@ impl Lexer {
                         self.next();
                         if let Some('>') = self.peek_next() {
                             self.next();
-                            tokens.push(Token::new(DoubleArrow, self.index));
+                            tokens.push(Token::new(DoubleArrow, self.current));
                         } else {
-                            eprintln!("Expected '>' after '<-' token at index: {}", self.index);
+                            eprintln!("Expected '>' after '<-' token at index: {}", self.current);
                             return None;
                         }
                     } else {
-                        eprintln!("Expected '-' after '<' token at index: {}", self.index);
+                        eprintln!("Expected '-' after '<' token at index: {}", self.current);
                         return None;
                     }
                 }
@@ -130,12 +132,13 @@ impl Lexer {
                     continue;
                 }
                 c => {
-                    eprintln!("Unexpected character '{c}' at index: {}", self.index);
+                    eprintln!("Unexpected character '{c}' at index: {}", self.current);
                     return None;
                 }
             }
             self.next();
         }
+        tokens.push(Token::new(TokenKind::EOF, self.current));
         return Some(tokens);
     }
 }
