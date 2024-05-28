@@ -62,7 +62,7 @@ impl Lexer {
         let Some(first) = self.next() else {
             return None;
         };
-        // check if first character is not alphabetic or '_'
+        // check if first character is not alphabetic, '_' or special cases 1 and 0
         if !(first.is_alphabetic() || *first == '_') {
             eprintln!(
                 "Expected alphabetic character or '_' at the beginning of identifier at index: {}",
@@ -70,6 +70,7 @@ impl Lexer {
             );
             return None;
         }
+
         while let Some(&ch) = self.peek() {
             if !(ch.is_alphanumeric() || ch == '_') {
                 break;
@@ -81,8 +82,8 @@ impl Lexer {
 
         // check for keywords
         let token = match string.as_str() {
-            "true" | "t" | "1" => Token::new(TokenKind::True, start_index),
-            "false" | "f" | "0" => Token::new(TokenKind::False, start_index),
+            "true" | "t" => Token::new(TokenKind::True, start_index),
+            "false" | "f" => Token::new(TokenKind::False, start_index),
             _ => Token::new(TokenKind::Identifier(string), start_index),
         };
         tokens.push(token);
@@ -127,7 +128,7 @@ impl Lexer {
                     }
                 }
                 c if c.is_whitespace() => {}
-                '0' | '1' | 'a'..='z' | 'A'..='Z' | '_' => {
+                'a'..='z' | 'A'..='Z' | '_' => {
                     self.identifier(&mut tokens)?;
                     continue;
                 }

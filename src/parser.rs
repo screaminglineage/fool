@@ -134,7 +134,6 @@ impl Parser {
             Some(Token {kind: tk::Identifier(val), .. }) => Some(Expr::Identifier(val.to_owned())),
 
             Some(Token { kind: tk::OpenParen, .. }) => {
-                // self.advance();
                 let inner = self.conditional()?;
                 if self.check(&tk::CloseParen) {
                     return Some(Expr::Group(Box::new(inner)));
