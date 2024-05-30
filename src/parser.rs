@@ -1,21 +1,21 @@
 use crate::lexer::*;
 use TokenKind as tk;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Expr {
-    Op(Box<Op>),
     Value(BooleanValue),
     Variable(String),
+    Op(Box<Op>),
     Group(Box<Expr>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Op {
     Not(Expr),
     Binary(BinaryOp),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum BinaryOp {
     Or(Expr, Expr),
     And(Expr, Expr),
@@ -24,7 +24,7 @@ pub enum BinaryOp {
     Biconditional(Expr, Expr),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BooleanValue {
     True,
     False,
@@ -41,7 +41,14 @@ impl Parser {
     }
 
     pub fn parse(mut self) -> Option<Expr> {
-        self.conditional()
+        let expr = self.conditional();
+        if let Some(Token { kind: tk::EOF, .. }) = self.peek() {
+            return expr;
+        }
+        let extra = self.peek().unwrap();
+        eprintln!("Unexpected token '{:?}' at end", extra.kind.clone()); 
+        None
+
     }
 
     fn peek(&self) -> Option<&Token> {
