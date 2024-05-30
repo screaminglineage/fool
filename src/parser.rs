@@ -1,157 +1,167 @@
-use fool::Boolean;
-use fool::Expression;
-use fool::Operation;
+use crate::lexer::*;
+use TokenKind as tk;
 
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub enum Token {
-    Variable(char),
-    Bool(Boolean),
-    Op(Operator),
-    WhiteSpace,
+#[derive(Debug, Clone)]
+pub enum Expr {
+    Value(BooleanValue),
+    Variable(String),
+    Op(Box<Op>),
+    Group(Box<Expr>),
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub enum Operator {
-    Not,
-    Binary(BinaryOps),
+#[derive(Debug, Clone)]
+pub enum Op {
+    Not(Expr),
+    Binary(BinaryOp),
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub enum BinaryOps {
-    And,
-    Or,
-    // Xor
+#[derive(Debug, Clone)]
+pub enum BinaryOp {
+    Or(Expr, Expr),
+    And(Expr, Expr),
+    Xor(Expr, Expr),
+    Implies(Expr, Expr),
+    Biconditional(Expr, Expr),
 }
 
-pub fn parse(expr: &str) -> Expression {
-    let tokens = remove_whitespace(create_tokens(expr));
-    if tokens.is_empty() {
-        panic!("Error: Empty Expression")
-    }
-    if valid_syntax(&tokens) {
-        println!("{tokens:?}");
-        return create_expr(tokens);
-    } else {
-        panic!("Error: Malformed Expression")
-    }
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BooleanValue {
+    True,
+    False,
 }
 
-fn create_tokens(expr: &str) -> Vec<Token> {
-    expr.chars()
-        .map(|c| match c {
-            '0' => Token::Bool(Boolean::Zero),
-            '1' => Token::Bool(Boolean::One),
-            '!' => Token::Op(Operator::Not),
-            '.' => Token::Op(Operator::Binary(BinaryOps::And)),
-            '+' => Token::Op(Operator::Binary(BinaryOps::Or)),
-            // '^' => Token::Op(Operation::Xor),
-            a if a.is_alphabetic() => Token::Variable(a),
-            a if a.is_whitespace() => Token::WhiteSpace,
-            _ => panic!("Error: Unrecognised Token"),
-        })
-        .collect()
+pub struct Parser {
+    tokens: Vec<Token>,
+    current: usize,
 }
 
-fn remove_whitespace(tokens: Vec<Token>) -> Vec<Token> {
-    tokens
-        .into_iter()
-        .filter(|t| *t != Token::WhiteSpace)
-        .collect()
-}
-
-fn valid_syntax(tokens: &[Token]) -> bool {
-    use Token as t;
-    // first token cannot be a binary operator
-    if let t::Op(Operator::Binary(_)) = tokens[0] {
-        return false;
+impl Parser {
+    pub fn new(tokens: Vec<Token>) -> Self {
+        Self { tokens, current: 0 }
     }
 
-    // tokens is not empty so it's safe to unwrap
-    // last token cannot be an operator
-    if let t::Op(_) = tokens.last().unwrap() {
-        return false;
-    }
-
-    // two variables or booleans cannot be placed consecutively
-    // similarly two operators or `NOT` and another operator cannot be
-    // placed next to each other
-    for slice in tokens.windows(2) {
-        match slice[0] {
-            t::Variable(_) | t::Bool(_) if !matches!(slice[1], t::Op(Operator::Binary(_))) => {
-                return false
-            }
-            t::Op(Operator::Not) | t::Op(Operator::Binary(_))
-                if matches!(slice[1], t::Op(Operator::Binary(_))) =>
-            {
-                return false
-            }
-            _ => (),
+    pub fn parse(mut self) -> Option<Expr> {
+        let expr = self.conditional();
+        if let Some(Token { kind: tk::EOF, .. }) = self.peek() {
+            return expr;
         }
-    }
-    true
-}
+        let extra = self.peek().unwrap();
+        eprintln!("Unexpected token '{:?}' at end", extra.kind.clone()); 
+        None
 
-// Used to calculate operator precedence
-fn precedence(token: &Operator) -> u8 {
-    match token {
-        Operator::Not => 3,
-        Operator::Binary(BinaryOps::And) => 2,
-        Operator::Binary(BinaryOps::Or) => 1,
     }
-}
 
-fn create_expr_from_operator(op: Operator, var_stack: &mut Vec<Expression>) {
-    use Expression as e;
-    match op {
-        Operator::Not => {
-            let expr = var_stack.pop().expect("var_stack has atleast 1 element");
-            let new_expr = e::Operation(Box::new(Operation::Not(expr)));
-            var_stack.push(new_expr);
+    fn peek(&self) -> Option<&Token> {
+        self.tokens.get(self.current)
+    }
+
+    fn previous(&self) -> Option<&Token> {
+        self.tokens.get(self.current - 1)
+    }
+
+    fn advance(&mut self) -> Option<&Token> {
+        if let Some(_) = self.peek() {
+            self.current += 1;
         }
-        Operator::Binary(op) => {
-            let expr_1 = var_stack.pop().expect("var_stack has atleast 2 elements");
-            let expr_2 = var_stack.pop().expect("var_stack has atleast 2 elements");
-            let new_expr = match op {
-                BinaryOps::And => Operation::And(expr_1, expr_2),
-                BinaryOps::Or => Operation::Or(expr_1, expr_2),
-            };
-            let new_expr = e::Operation(Box::new(new_expr));
-            var_stack.push(new_expr);
-        }
+        return self.previous();
     }
-}
 
-// Parsing the Tokens into an Expression
-// which can be evaluated
-fn create_expr(tokens: Vec<Token>) -> Expression {
-    let mut var_stack: Vec<Expression> = Vec::new();
-    let mut op_stack: Vec<Operator> = Vec::new();
-
-    use Expression as e;
-    use Token as t;
-    for token in tokens {
-        if let t::Op(op) = token {
-            while !op_stack.is_empty()
-                && precedence(&op) < precedence(op_stack.last().expect("op_stack is non-empty"))
-            {
-                let op = op_stack.pop().expect("op_stack is non-empty");
-                create_expr_from_operator(op, &mut var_stack);
-            }
-            op_stack.push(op);
+    fn check(&self, token_kind: &TokenKind) -> bool {
+        if let Some(t) = self.peek() {
+            *token_kind == t.kind
         } else {
-            match token {
-                t::Variable(a) => var_stack.push(e::Variable(a)),
-                t::Bool(a) => var_stack.push(e::Boolean(a)),
-                _ => (),
-            }
+            false
         }
     }
 
-    while !op_stack.is_empty() {
-        let op = op_stack.pop().expect("op_stack is non-empty");
-        create_expr_from_operator(op, &mut var_stack);
+    fn expect_tokens(&mut self, tokens: &[TokenKind]) -> Option<TokenKind> {
+        for token in tokens {
+            if self.check(token) {
+                return self.advance().map(|tok| tok.kind.clone());
+            }
+        }
+        return None;
     }
-    var_stack
-        .pop()
-        .expect("only 1 element left in variable stack")
+
+    fn conditional(&mut self) -> Option<Expr> {
+        let mut left = self.or()?;
+        while let Some(token) = self.expect_tokens(&[tk::Arrow, tk::DoubleArrow]) {
+            let right = self.or()?;
+            match token {
+                tk::Arrow => left = Expr::Op(Box::new(Op::Binary(BinaryOp::Implies(left, right)))),
+                tk::DoubleArrow => {
+                    left = Expr::Op(Box::new(Op::Binary(BinaryOp::Biconditional(left, right))))
+                }
+                _ => unreachable!(),
+            }
+        }
+        Some(left)
+    }
+
+    fn or(&mut self) -> Option<Expr> {
+        let mut left = self.xor()?;
+        while let Some(_) = self.expect_tokens(&[tk::Plus]) {
+            let right = self.xor()?;
+            left = Expr::Op(Box::new(Op::Binary(BinaryOp::Or(left, right))));
+        }
+        Some(left)
+    }
+
+    fn xor(&mut self) -> Option<Expr> {
+        let mut left = self.and()?;
+        while let Some(_) = self.expect_tokens(&[tk::Caret]) {
+            let right = self.and()?;
+            left = Expr::Op(Box::new(Op::Binary(BinaryOp::Xor(left, right))));
+        }
+        Some(left)
+    }
+
+    fn and(&mut self) -> Option<Expr> {
+        let mut left = self.not()?;
+        while let Some(_) = self.expect_tokens(&[tk::Star]) {
+            let right = self.not()?;
+            left = Expr::Op(Box::new(Op::Binary(BinaryOp::And(left, right))));
+        }
+        Some(left)
+    }
+
+    fn not(&mut self) -> Option<Expr> {
+        if let Some(_) = self.expect_tokens(&[tk::Bang]) {
+            let right = self.primary()?;
+            return Some(Expr::Op(Box::new(Op::Not(right))));
+        }
+        self.primary()
+    }
+
+    #[rustfmt::skip]
+    fn primary(&mut self) -> Option<Expr> {
+        match self.advance() {
+            Some(Token { kind: tk::True, .. }) => Some(Expr::Value(BooleanValue::True)),
+            Some(Token { kind: tk::False, .. }) => Some(Expr::Value(BooleanValue::False)),
+            Some(Token {kind: tk::Identifier(val), .. }) => Some(Expr::Variable(val.to_owned())),
+
+            Some(Token { kind: tk::OpenParen, .. }) => {
+                let inner = self.conditional()?;
+                if self.check(&tk::CloseParen) {
+                    self.advance();
+                    return Some(Expr::Group(Box::new(inner)));
+                } else {
+                    eprintln!(
+                        "Expected ')' after {:?}, found: {:?}", 
+                        self.previous().map(|tok| tok.kind.clone()), 
+                        self.peek().map(|tok| tok.kind.clone())
+                    );
+                    return None;
+                }
+            }
+            _ => {
+                eprintln!(
+                    "Expected true, false or identifier after {:?}, found: '{:?}'", 
+                    self.previous().map(|tok| tok.kind.clone()), 
+                    self.peek().map(|tok| tok.kind.clone())
+                );
+                return None;
+            }
+        }
+    }
 }

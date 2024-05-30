@@ -1,9 +1,4 @@
 # fool
 A Simple Boolean Algebra Engine
 
-Only has the most basic operations (AND, NOT, OR) so far.
-
-TODO
-- [ ] XOR logic
-- [x] parsing user input
-- [ ] CLI Interface
+This branch is for rewriting the project from scratch with an actual lexer and parser. Also to add support for mathematical logic operations such as Implies (->) and Biconditionals (<->).

@@ -1,8 +1,15 @@
+mod eval;
+mod lexer;
 mod parser;
-use parser::parse;
+use lexer::*;
+use parser::*;
 
 fn main() {
-    let expr = "a. a";
-    let t = parse(expr).evaluate();
-    println!("{t:?}");
+    // let expr = "!var * true ^ b + c ^ (x ^ y -> var2 <-> _3) ^ f * t";
+    let expr = "a ^ (t + abcd) ^ e";
+    let tokens = Lexer::new(expr).lex().unwrap();
+    println!("{tokens:?}");
+    let ast = Parser::new(tokens).parse().unwrap();
+    let ast = eval::simplify(ast);
+    println!("{ast:#?}");
 }
