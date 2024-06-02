@@ -20,7 +20,7 @@ pub enum BinaryOp {
     Or(Expr, Expr),
     And(Expr, Expr),
     Xor(Expr, Expr),
-    Implies(Expr, Expr),
+    Implication(Expr, Expr),
     Biconditional(Expr, Expr),
 }
 
@@ -42,13 +42,18 @@ impl Parser {
 
     pub fn parse(mut self) -> Option<Expr> {
         let expr = self.conditional();
+        // parsing error
+        if let None = expr {
+            return None;
+        }
+        // parsed correctly and completely
         if let Some(Token { kind: tk::EOF, .. }) = self.peek() {
             return expr;
-        }
+        } 
+        // didnt parse completely
         let extra = self.peek().unwrap();
         eprintln!("Unexpected token '{:?}' at end", extra.kind.clone()); 
-        None
-
+        return None;
     }
 
     fn peek(&self) -> Option<&Token> {
@@ -88,7 +93,7 @@ impl Parser {
         while let Some(token) = self.expect_tokens(&[tk::Arrow, tk::DoubleArrow]) {
             let right = self.or()?;
             match token {
-                tk::Arrow => left = Expr::Op(Box::new(Op::Binary(BinaryOp::Implies(left, right)))),
+                tk::Arrow => left = Expr::Op(Box::new(Op::Binary(BinaryOp::Implication(left, right)))),
                 tk::DoubleArrow => {
                     left = Expr::Op(Box::new(Op::Binary(BinaryOp::Biconditional(left, right))))
                 }
@@ -157,8 +162,8 @@ impl Parser {
             _ => {
                 eprintln!(
                     "Expected true, false or identifier after {:?}, found: '{:?}'", 
-                    self.previous().map(|tok| tok.kind.clone()), 
-                    self.peek().map(|tok| tok.kind.clone())
+                    self.tokens.get(self.current.checked_sub(2)?).map(|tok| tok.kind.clone()), 
+                    self.previous().map(|tok| tok.kind.clone())
                 );
                 return None;
             }

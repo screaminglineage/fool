@@ -18,7 +18,7 @@ pub fn stringify(expr: Expr) -> String {
             Op::Binary(BinaryOp::Xor(left, right)) => {
                 format!("{} ^ {}", stringify(left), stringify(right))
             }
-            Op::Binary(BinaryOp::Implies(left, right)) => {
+            Op::Binary(BinaryOp::Implication(left, right)) => {
                 format!("{} -> {}", stringify(left), stringify(right))
             }
             Op::Binary(BinaryOp::Biconditional(left, right)) => {
