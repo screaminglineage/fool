@@ -8,7 +8,13 @@ pub fn stringify(expr: Expr) -> String {
         },
         Expr::Variable(a) => format!("{a}"),
         Expr::Op(op) => match *op {
-            Op::Not(a) => format!("!{}", stringify(a)),
+            Op::Not(a) => {
+                if let Expr::Op(_) = a {
+                    format!("!({})", stringify(a))
+                } else {
+                    format!("!{}", stringify(a))
+                }
+            }
             Op::Binary(BinaryOp::Or(left, right)) => {
                 format!("{} + {}", stringify(left), stringify(right))
             }

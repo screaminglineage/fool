@@ -131,11 +131,19 @@ impl Parser {
     }
 
     fn not(&mut self) -> Option<Expr> {
-        if let Some(_) = self.expect_tokens(&[tk::Bang]) {
-            let right = self.primary()?;
-            return Some(Expr::Op(Box::new(Op::Not(right))));
+        let mut count = 0;
+        while let Some(_) = self.expect_tokens(&[tk::Bang]) {
+            count += 1;
         }
-        self.primary()
+        let right = self.primary()?;
+        if count > 0 {
+            if count % 2 == 0 {
+                return Some(right);
+            } else {
+                return Some(Expr::Op(Box::new(Op::Not(right))));
+            }
+        }
+        Some(right)
     }
 
     #[rustfmt::skip]

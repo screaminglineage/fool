@@ -6,10 +6,17 @@ pub fn simplify(expr: Expr) -> Expr {
     match expr {
         Expr::Value(_) | Expr::Variable(_) => expr,
         Expr::Op(op) => simplify_op(*op),
+        // TODO: fix this shit
         Expr::Group(group) => {
             let new = simplify(*group);
             if let Expr::Value(_) | Expr::Variable(_) = new {
                 return new;
+            } else if let Expr::Op(ref op) = new {
+                if let Op::Not(_) = op.deref() {
+                    return new;
+                } else {
+                    return Expr::Group(Box::new(new));
+                }
             } else {
                 return Expr::Group(Box::new(new));
             }
@@ -31,6 +38,7 @@ fn simplify_op(op: Op) -> Expr {
 use BooleanValue::False as F;
 use BooleanValue::True as T;
 
+// TODO: fix this shit
 fn simplify_not(expr: Expr) -> Expr {
     match expr {
         Expr::Value(T) => Expr::Value(F),
