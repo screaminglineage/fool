@@ -55,7 +55,6 @@ fn simplify_not(expr: Expr) -> Expr {
 fn simplify_or(left: Expr, right: Expr) -> Expr {
     match (left, right) {
         (Expr::Value(F), Expr::Value(F)) => Expr::Value(F),
-        (Expr::Value(_), Expr::Value(_)) => Expr::Value(T),
         (Expr::Value(T), _) | (_, Expr::Value(T)) => Expr::Value(T),
         (Expr::Value(F), expr) | (expr, Expr::Value(F)) => simplify(expr),
 
@@ -73,7 +72,6 @@ fn simplify_or(left: Expr, right: Expr) -> Expr {
 fn simplify_and(left: Expr, right: Expr) -> Expr {
     match (left, right) {
         (Expr::Value(T), Expr::Value(T)) => Expr::Value(T),
-        (Expr::Value(_), Expr::Value(_)) => Expr::Value(F),
         (Expr::Value(T), expr) | (expr, Expr::Value(T)) => simplify(expr),
         (Expr::Value(F), _) | (_, Expr::Value(F)) => Expr::Value(F),
 
