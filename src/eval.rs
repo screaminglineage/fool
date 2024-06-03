@@ -1,22 +1,13 @@
-use std::ops::Deref;
-
 use crate::parser::*;
 
 pub fn simplify(expr: Expr) -> Expr {
     match expr {
         Expr::Value(_) | Expr::Variable(_) => expr,
-        Expr::Op(op) => simplify_op(*op),
-        // TODO: fix this shit
+        Expr::Op(op) => simplify_op(op),
         Expr::Group(group) => {
             let new = simplify(*group);
-            if let Expr::Value(_) | Expr::Variable(_) = new {
+            if let Expr::Value(_) | Expr::Variable(_) | Expr::Op(Op::Not(_)) = new {
                 return new;
-            } else if let Expr::Op(ref op) = new {
-                if let Op::Not(_) = op.deref() {
-                    return new;
-                } else {
-                    return Expr::Group(Box::new(new));
-                }
             } else {
                 return Expr::Group(Box::new(new));
             }
@@ -26,19 +17,18 @@ pub fn simplify(expr: Expr) -> Expr {
 
 fn simplify_op(op: Op) -> Expr {
     match op {
-        Op::Not(expr) => simplify_not(expr),
-        Op::Binary(BinaryOp::Or(left, right)) => simplify_or(left, right),
-        Op::Binary(BinaryOp::And(left, right)) => simplify_and(left, right),
-        Op::Binary(BinaryOp::Xor(left, right)) => simplify_xor(left, right),
-        Op::Binary(BinaryOp::Implication(left, right)) => simplify_implication(left, right),
-        Op::Binary(BinaryOp::Biconditional(left, right)) => simplify_biconditional(left, right),
+        Op::Not(expr) => simplify_not(*expr),
+        Op::Binary(BinaryOp::Or(left, right)) => simplify_or(*left, *right),
+        Op::Binary(BinaryOp::And(left, right)) => simplify_and(*left, *right),
+        Op::Binary(BinaryOp::Xor(left, right)) => simplify_xor(*left, *right),
+        Op::Binary(BinaryOp::Implication(left, right)) => simplify_implication(*left, *right),
+        Op::Binary(BinaryOp::Biconditional(left, right)) => simplify_biconditional(*left, *right),
     }
 }
 
 use BooleanValue::False as F;
 use BooleanValue::True as T;
 
-// TODO: fix this shit
 fn simplify_not(expr: Expr) -> Expr {
     match expr {
         Expr::Value(T) => Expr::Value(F),
@@ -47,14 +37,8 @@ fn simplify_not(expr: Expr) -> Expr {
             let e = simplify(e);
             return match e {
                 Expr::Value(_) => simplify_not(e),
-                Expr::Op(ref boxed) => {
-                    if let Op::Not(a) = boxed.deref() {
-                        return a.clone();
-                    } else {
-                        return Expr::Op(Box::new(Op::Not(e)));
-                    }
-                }
-                _ => Expr::Op(Box::new(Op::Not(e))),
+                Expr::Op(Op::Not(a)) => *a.clone(),
+                _ => Expr::Op(Op::Not(Box::new(e))),
             };
         }
     }
@@ -71,7 +55,7 @@ fn simplify_or(left: Expr, right: Expr) -> Expr {
             if let (Expr::Value(_), _) | (_, Expr::Value(_)) = (l.clone(), r.clone()) {
                 return simplify_or(l, r);
             } else {
-                return Expr::Op(Box::new(Op::Binary(BinaryOp::Or(l, r))));
+                return Expr::Op(Op::Binary(BinaryOp::Or(Box::new(l), Box::new(r))));
             }
         }
     }
@@ -88,7 +72,7 @@ fn simplify_and(left: Expr, right: Expr) -> Expr {
             if let (Expr::Value(_), _) | (_, Expr::Value(_)) = (l.clone(), r.clone()) {
                 return simplify_and(l, r);
             } else {
-                return Expr::Op(Box::new(Op::Binary(BinaryOp::And(l, r))));
+                return Expr::Op(Op::Binary(BinaryOp::And(Box::new(l), Box::new(r))));
             }
         }
     }
@@ -105,7 +89,7 @@ fn simplify_xor(left: Expr, right: Expr) -> Expr {
             if val == F {
                 return simplify(expr);
             } else {
-                return Expr::Op(Box::new(Op::Not(simplify(expr))));
+                return Expr::Op(Op::Not(Box::new(simplify(expr))));
             }
         }
         (l, r) => {
@@ -113,7 +97,7 @@ fn simplify_xor(left: Expr, right: Expr) -> Expr {
             if let (Expr::Value(_), _) | (_, Expr::Value(_)) = (l.clone(), r.clone()) {
                 return simplify_xor(l, r);
             } else {
-                return Expr::Op(Box::new(Op::Binary(BinaryOp::Xor(l, r))));
+                return Expr::Op(Op::Binary(BinaryOp::Xor(Box::new(l), Box::new(r))));
             }
         }
     }

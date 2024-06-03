@@ -5,23 +5,23 @@ use TokenKind as tk;
 pub enum Expr {
     Value(BooleanValue),
     Variable(String),
-    Op(Box<Op>),
+    Op(Op),
     Group(Box<Expr>),
 }
 
 #[derive(Debug, Clone)]
 pub enum Op {
-    Not(Expr),
+    Not(Box<Expr>),
     Binary(BinaryOp),
 }
 
 #[derive(Debug, Clone)]
 pub enum BinaryOp {
-    Or(Expr, Expr),
-    And(Expr, Expr),
-    Xor(Expr, Expr),
-    Implication(Expr, Expr),
-    Biconditional(Expr, Expr),
+    Or(Box<Expr>, Box<Expr>),
+    And(Box<Expr>, Box<Expr>),
+    Xor(Box<Expr>, Box<Expr>),
+    Implication(Box<Expr>, Box<Expr>),
+    Biconditional(Box<Expr>, Box<Expr>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -93,9 +93,9 @@ impl Parser {
         while let Some(token) = self.expect_tokens(&[tk::Arrow, tk::DoubleArrow]) {
             let right = self.or()?;
             match token {
-                tk::Arrow => left = Expr::Op(Box::new(Op::Binary(BinaryOp::Implication(left, right)))),
+                tk::Arrow => left = Expr::Op(Op::Binary(BinaryOp::Implication(Box::new(left), Box::new(right)))),
                 tk::DoubleArrow => {
-                    left = Expr::Op(Box::new(Op::Binary(BinaryOp::Biconditional(left, right))))
+                    left = Expr::Op(Op::Binary(BinaryOp::Biconditional(Box::new(left), Box::new(right))))
                 }
                 _ => unreachable!(),
             }
@@ -107,7 +107,7 @@ impl Parser {
         let mut left = self.xor()?;
         while let Some(_) = self.expect_tokens(&[tk::Plus]) {
             let right = self.xor()?;
-            left = Expr::Op(Box::new(Op::Binary(BinaryOp::Or(left, right))));
+            left = Expr::Op(Op::Binary(BinaryOp::Or(Box::new(left), Box::new(right) )));
         }
         Some(left)
     }
@@ -116,7 +116,7 @@ impl Parser {
         let mut left = self.and()?;
         while let Some(_) = self.expect_tokens(&[tk::Caret]) {
             let right = self.and()?;
-            left = Expr::Op(Box::new(Op::Binary(BinaryOp::Xor(left, right))));
+            left = Expr::Op(Op::Binary(BinaryOp::Xor(Box::new(left), Box::new(right) )));
         }
         Some(left)
     }
@@ -125,7 +125,7 @@ impl Parser {
         let mut left = self.not()?;
         while let Some(_) = self.expect_tokens(&[tk::Star]) {
             let right = self.not()?;
-            left = Expr::Op(Box::new(Op::Binary(BinaryOp::And(left, right))));
+            left = Expr::Op(Op::Binary(BinaryOp::And(Box::new(left), Box::new(right))));
         }
         Some(left)
     }
@@ -140,7 +140,7 @@ impl Parser {
             if count % 2 == 0 {
                 return Some(right);
             } else {
-                return Some(Expr::Op(Box::new(Op::Not(right))));
+                return Some(Expr::Op(Op::Not(Box::new(right))));
             }
         }
         Some(right)
