@@ -98,10 +98,25 @@ fn simplify_xor(left: Expr, right: Expr) -> Expr {
                 return simplify_xor(l, r);
             } else {
                 return Expr::Op(Op::Binary(BinaryOp::Xor(Box::new(l), Box::new(r))));
+
+                // TODO: Use this instead to make it easier to further simplify expressions
+                // return Expr::Op(Op::Binary(BinaryOp::Or(
+                //     Box::new(Expr::Op(Op::Binary(BinaryOp::And(
+                //         Box::new(Expr::Op(Op::Not(Box::new(l.clone())))),
+                //         Box::new(r.clone()),
+                //     )))),
+                //     Box::new(Expr::Op(Op::Binary(BinaryOp::And(
+                //         Box::new(r),
+                //         Box::new(Expr::Op(Op::Not(Box::new(l)))),
+                //     )))),
+                // )));
             }
         }
     }
 }
+
+// TODO: Create a macro to not have to call simplify_ functions again
+// Macro should replace with Or(Not(left), right), etc
 
 fn simplify_implication(left: Expr, right: Expr) -> Expr {
     simplify_or(simplify_not(left), right)
