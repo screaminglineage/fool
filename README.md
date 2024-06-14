@@ -18,7 +18,11 @@ The following operations are supported:
 
 
 ### Examples
-- `!false * !(a ^ b)`
-- `var1 + var2 + false * true -> var3`
-- `!var * t ^ b + c ^ (x ^ y -> var2 <-> _3) ^ f * t`
+- `!!a` simplifies to `a`
+- `!a + b` remains the same as no simplification is possible
+- `a * false` simplifies to `false`
+- `a -> b` simplifies to `!a + b`
+- `!false * !(a ^ b)` simplifies to `!(a ^ b)`
+- `var1 + var2 + false * true -> var3` simplifies to `!(var1 + var2) + var3`
+- `!var * true ^ b + c ^ (x ^ y -> var2 <-> _3) ^ false * true` simplifies to `var ^ b + c ^ !(!(x ^ y) + var2 ^ _3)`
 
