@@ -18,11 +18,11 @@ pub fn simplify(expr: Expr) -> Expr {
 fn simplify_op(op: Op) -> Expr {
     match op {
         Op::Not(expr) => simplify_not(*expr),
-        Op::Binary(BinaryOp::Or(left, right)) => simplify_or(*left, *right),
-        Op::Binary(BinaryOp::And(left, right)) => simplify_and(*left, *right),
-        Op::Binary(BinaryOp::Xor(left, right)) => simplify_xor(*left, *right),
-        Op::Binary(BinaryOp::Implication(left, right)) => simplify_implication(*left, *right),
-        Op::Binary(BinaryOp::Biconditional(left, right)) => simplify_biconditional(*left, *right),
+        Op::Or(left, right) => simplify_or(*left, *right),
+        Op::And(left, right) => simplify_and(*left, *right),
+        Op::Xor(left, right) => simplify_xor(*left, *right),
+        Op::Implication(left, right) => simplify_implication(*left, *right),
+        Op::Biconditional(left, right) => simplify_biconditional(*left, *right),
     }
 }
 
@@ -55,7 +55,7 @@ fn simplify_or(left: Expr, right: Expr) -> Expr {
             if let (Expr::Value(_), _) | (_, Expr::Value(_)) = (l.clone(), r.clone()) {
                 return simplify_or(l, r);
             } else {
-                return Expr::Op(Op::Binary(BinaryOp::Or(Box::new(l), Box::new(r))));
+                return Expr::Op(Op::Or(Box::new(l), Box::new(r)));
             }
         }
     }
@@ -72,7 +72,7 @@ fn simplify_and(left: Expr, right: Expr) -> Expr {
             if let (Expr::Value(_), _) | (_, Expr::Value(_)) = (l.clone(), r.clone()) {
                 return simplify_and(l, r);
             } else {
-                return Expr::Op(Op::Binary(BinaryOp::And(Box::new(l), Box::new(r))));
+                return Expr::Op(Op::And(Box::new(l), Box::new(r)));
             }
         }
     }
@@ -97,7 +97,7 @@ fn simplify_xor(left: Expr, right: Expr) -> Expr {
             if let (Expr::Value(_), _) | (_, Expr::Value(_)) = (l.clone(), r.clone()) {
                 return simplify_xor(l, r);
             } else {
-                return Expr::Op(Op::Binary(BinaryOp::Xor(Box::new(l), Box::new(r))));
+                return Expr::Op(Op::Xor(Box::new(l), Box::new(r)));
 
                 // TODO: Use this instead to make it easier to further simplify expressions
                 // return Expr::Op(Op::Binary(BinaryOp::Or(

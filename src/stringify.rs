@@ -17,19 +17,19 @@ pub fn stringify(expr: Expr) -> String {
                     format!("!{}", stringify(*op))
                 }
             }
-            Op::Binary(BinaryOp::Or(left, right)) => {
+            Op::Or(left, right) => {
                 format!("{} + {}", stringify(*left), stringify(*right))
             }
-            Op::Binary(BinaryOp::And(left, right)) => {
+            Op::And(left, right) => {
                 format!("{} * {}", stringify(*left), stringify(*right))
             }
-            Op::Binary(BinaryOp::Xor(left, right)) => {
+            Op::Xor(left, right) => {
                 format!("{} ^ {}", stringify(*left), stringify(*right))
             }
-            Op::Binary(BinaryOp::Implication(left, right)) => {
+            Op::Implication(left, right) => {
                 format!("{} -> {}", stringify(*left), stringify(*right))
             }
-            Op::Binary(BinaryOp::Biconditional(left, right)) => {
+            Op::Biconditional(left, right) => {
                 format!("{} <-> {}", stringify(*left), stringify(*right))
             }
         },

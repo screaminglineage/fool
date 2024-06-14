@@ -12,11 +12,6 @@ pub enum Expr {
 #[derive(Debug, Clone)]
 pub enum Op {
     Not(Box<Expr>),
-    Binary(BinaryOp),
-}
-
-#[derive(Debug, Clone)]
-pub enum BinaryOp {
     Or(Box<Expr>, Box<Expr>),
     And(Box<Expr>, Box<Expr>),
     Xor(Box<Expr>, Box<Expr>),
@@ -93,9 +88,9 @@ impl Parser {
         while let Some(token) = self.expect_tokens(&[tk::Arrow, tk::DoubleArrow]) {
             let right = self.or()?;
             match token {
-                tk::Arrow => left = Expr::Op(Op::Binary(BinaryOp::Implication(Box::new(left), Box::new(right)))),
+                tk::Arrow => left = Expr::Op(Op::Implication(Box::new(left), Box::new(right))),
                 tk::DoubleArrow => {
-                    left = Expr::Op(Op::Binary(BinaryOp::Biconditional(Box::new(left), Box::new(right))))
+                    left = Expr::Op(Op::Biconditional(Box::new(left), Box::new(right)))
                 }
                 _ => unreachable!(),
             }
@@ -107,7 +102,7 @@ impl Parser {
         let mut left = self.xor()?;
         while let Some(_) = self.expect_tokens(&[tk::Plus]) {
             let right = self.xor()?;
-            left = Expr::Op(Op::Binary(BinaryOp::Or(Box::new(left), Box::new(right) )));
+            left = Expr::Op(Op::Or(Box::new(left), Box::new(right)));
         }
         Some(left)
     }
@@ -116,7 +111,7 @@ impl Parser {
         let mut left = self.and()?;
         while let Some(_) = self.expect_tokens(&[tk::Caret]) {
             let right = self.and()?;
-            left = Expr::Op(Op::Binary(BinaryOp::Xor(Box::new(left), Box::new(right) )));
+            left = Expr::Op(Op::Xor(Box::new(left), Box::new(right)));
         }
         Some(left)
     }
@@ -125,7 +120,7 @@ impl Parser {
         let mut left = self.not()?;
         while let Some(_) = self.expect_tokens(&[tk::Star]) {
             let right = self.not()?;
-            left = Expr::Op(Op::Binary(BinaryOp::And(Box::new(left), Box::new(right))));
+            left = Expr::Op(Op::And(Box::new(left), Box::new(right)));
         }
         Some(left)
     }
