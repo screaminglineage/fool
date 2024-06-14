@@ -3,8 +3,8 @@ use crate::parser::*;
 pub fn stringify(expr: Expr) -> String {
     match expr {
         Expr::Value(a) => match a {
-            BooleanValue::True => format!("t"),
-            BooleanValue::False => format!("f"),
+            BooleanValue::True => format!("true"),
+            BooleanValue::False => format!("false"),
         },
         Expr::Variable(a) => format!("{a}"),
         Expr::Op(op) => match op {

@@ -13,16 +13,16 @@ The following operations are supported:
 - `+` - Or
 - `*` - And
 - `^` - Xor
-- `->` - Implication
-- `<->` - Biconditional
+- `=>` - Implication
+- `<=>` - Biconditional
 
 
 ### Examples
 - `!!a` simplifies to `a`
 - `!a + b` remains the same as no simplification is possible
 - `a * false` simplifies to `false`
-- `a -> b` simplifies to `!a + b`
+- `a => b` simplifies to `!a + b`
 - `!false * !(a ^ b)` simplifies to `!(a ^ b)`
-- `var1 + var2 + false * true -> var3` simplifies to `!(var1 + var2) + var3`
-- `!var * true ^ b + c ^ (x ^ y -> var2 <-> _3) ^ false * true` simplifies to `var ^ b + c ^ !(!(x ^ y) + var2 ^ _3)`
+- `var1 + var2 + false * true => var3` simplifies to `!(var1 + var2) + var3`
+- `!var * true ^ b + c ^ (x ^ y => var2 <=> _3) ^ false * true` simplifies to `!var ^ b + c ^ !(!(x ^ y) + var2 ^ _3)`
 

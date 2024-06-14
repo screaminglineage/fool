@@ -14,7 +14,7 @@ fn evaluate(expr: &str) {
 }
 
 fn main() {
-    let expr = "!var * t ^ b + c ^ (x ^ y -> var2 <-> _3) ^ f * t";
+    let expr = "!var * t ^ b + c ^ (x ^ y => var2 <=> _3) ^ f * t";
     // let expr = "(y*z + x*!z)*!(x*!y+z)";
     evaluate(expr);
 }

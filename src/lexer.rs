@@ -101,29 +101,29 @@ impl Lexer {
                 '+' => tokens.push(Token::new(Plus, self.current)),
                 '*' => tokens.push(Token::new(Star, self.current)),
                 '^' => tokens.push(Token::new(Caret, self.current)),
-                // parse '->'
-                '-' => {
+                // parse '=>'
+                '=' => {
                     if let Some('>') = self.peek_next() {
                         self.next();
                         tokens.push(Token::new(Arrow, self.current));
                     } else {
-                        eprintln!("Expected '>' after '-' token at index: {}", self.current);
+                        eprintln!("Expected '>' after '=' token at index: {}", self.current);
                         return None;
                     }
                 }
-                // parse '<->'
+                // parse '<=>'
                 '<' => {
-                    if let Some('-') = self.peek_next() {
+                    if let Some('=') = self.peek_next() {
                         self.next();
                         if let Some('>') = self.peek_next() {
                             self.next();
                             tokens.push(Token::new(DoubleArrow, self.current));
                         } else {
-                            eprintln!("Expected '>' after '<-' token at index: {}", self.current);
+                            eprintln!("Expected '>' after '<=' token at index: {}", self.current);
                             return None;
                         }
                     } else {
-                        eprintln!("Expected '-' after '<' token at index: {}", self.current);
+                        eprintln!("Expected '=' after '<' token at index: {}", self.current);
                         return None;
                     }
                 }
