@@ -1,7 +1,7 @@
 # fool
 A Simple Boolean Algebra Engine
 
-Currently supports simplifying operations involving Not, And, Or, and Xor, as well as the mathematical logic functions implication (->) and biconditional (<->).
+Currently supports simplifying operations involving Not, And, Or, and Xor, as well as the mathematical logic functions implication (`=>`) and biconditional (`<=>`).
 
 ## Syntax
 Any variable consisting of alphanumeric characters (without a digit at the beginning) and `_` is a valid variable name. 
