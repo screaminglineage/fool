@@ -100,16 +100,9 @@ fn simplify_xor(left: Expr, right: Expr) -> Expr {
                 return Expr::Op(Op::Xor(Box::new(l), Box::new(r)));
 
                 // TODO: Use this instead to make it easier to further simplify expressions
-                // return Expr::Op(Op::Binary(BinaryOp::Or(
-                //     Box::new(Expr::Op(Op::Binary(BinaryOp::And(
-                //         Box::new(Expr::Op(Op::Not(Box::new(l.clone())))),
-                //         Box::new(r.clone()),
-                //     )))),
-                //     Box::new(Expr::Op(Op::Binary(BinaryOp::And(
-                //         Box::new(r),
-                //         Box::new(Expr::Op(Op::Not(Box::new(l)))),
-                //     )))),
-                // )));
+                // return simplify_or(
+                // simplify_and(simplify_not(l.clone()), r.clone()),
+                // simplify_and(l, simplify_not(r)));
             }
         }
     }
